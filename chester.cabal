@@ -70,7 +70,7 @@ executable chester
     -- Other library packages from which modules are imported.
     build-depends:     
         base ^>=4.14.3.0
-        , atom
+        , mtl ^>=2.2.2
 
     -- Directories containing source files.
     hs-source-dirs:   app
