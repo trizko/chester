@@ -2,19 +2,27 @@ module Main where
 
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Monad (forever, when)
-import System.IO (hSetBuffering, stdin, BufferMode(NoBuffering))
+import System.IO (hSetBuffering, BufferMode(NoBuffering), hReady, stdin)
 
 type PlayerTimer = Int
 data Side = White | Black deriving Show
 data Game = Game { white :: PlayerTimer, black :: PlayerTimer, side :: Side } deriving Show
 
 decrement :: Game -> Game
-decrement (Game w b White) = Game { white = w - 1, black = b, side = White}
-decrement (Game w b Black) = Game { white = w, black = b - 1, side = Black}
+decrement (Game w b White) = Game { white = w - 1, black = b, side = White }
+decrement (Game w b Black) = Game { white = w, black = b - 1, side = Black }
 
 toggleTurn :: Game -> Game
-toggleTurn (Game w b White) = Game { white = w, black = b, side = Black}
-toggleTurn (Game w b Black) = Game { white = w, black = b, side = White}
+toggleTurn (Game w b White) = Game { white = w, black = b, side = Black }
+toggleTurn (Game w b Black) = Game { white = w, black = b, side = White }
+
+nonBlockingGetChar :: IO (Maybe Char)
+nonBlockingGetChar = do
+    ready <- hReady stdin
+    if ready
+        then Just <$> getChar
+        else return Nothing
+
 
 playTurn :: Game -> IO ()
 playTurn game = do
