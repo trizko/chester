@@ -1,12 +1,13 @@
 module Main where
 
-import Control.Concurrent (forkIO, threadDelay)
-import Control.Monad (forever, when)
+import Control.Monad.State (StateT, get, modify, liftIO, evalStateT, when)
+import Control.Concurrent (threadDelay)
 import System.IO (hSetBuffering, BufferMode(NoBuffering), hReady, stdin)
 
 type PlayerTimer = Int
 data Side = White | Black deriving Show
 data Game = Game { white :: PlayerTimer, black :: PlayerTimer, side :: Side } deriving Show
+type GameState = StateT Game IO ()
 
 decrement :: Game -> Game
 decrement (Game w b White) = Game { white = w - 1, black = b, side = White }
@@ -23,17 +24,30 @@ nonBlockingGetChar = do
         then Just <$> getChar
         else return Nothing
 
+gameLoop :: GameState
+gameLoop = do
+    game <- get
+    liftIO $ print game
 
-playTurn :: Game -> IO ()
-playTurn game = do
-    print game
     when (white game > 0 && black game > 0) $ do
-        threadDelay 1000000
-        let newGame = decrement game
-        playTurn newGame
+        liftIO $ threadDelay 1000000
+        modify decrement
+
+        input <- liftIO nonBlockingGetChar
+        case input of
+            Just ' ' -> do
+                modify toggleTurn
+            _ -> return ()
+
+        gameLoop
+
+runGame :: Game -> IO ()
+runGame initialGame = do
+    hSetBuffering stdin NoBuffering
+    evalStateT gameLoop initialGame
 
 main :: IO ()
 main = do
-    let game = Game { white = 10, black = 10, side = White }
+    let game = Game { white = 600, black = 600, side = White }
     putStrLn "Starting the chess timer. Press space bar to toggle turns."
-    playTurn game
+    runGame game
